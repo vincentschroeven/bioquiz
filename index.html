@@ -204,6 +204,49 @@
   }
   .next-btn:active { transform: scale(0.97); opacity: 0.9; }
 
+  .help-btn {
+    width: 100%;
+    background: transparent;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 13px;
+    font-size: 15px;
+    color: var(--text-muted);
+    cursor: pointer;
+    margin-top: 10px;
+    transition: background 0.15s, transform 0.1s;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+  }
+  .help-btn:active { transform: scale(0.97); background: var(--bg); }
+  .help-btn.hidden { display: none; }
+
+  .explain-box {
+    margin-top: 14px;
+    border-radius: var(--radius);
+    border: 1.5px solid #bee3f8;
+    background: #ebf8ff;
+    padding: 14px 16px;
+    display: none;
+    animation: fadeIn 0.25s ease;
+  }
+  .explain-head {
+    font-size: 13px; font-weight: 700;
+    color: #2b6cb0; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .explain-text { font-size: 15px; color: #1a365d; line-height: 1.65; }
+  .explain-loading { color: #4299e1; font-size: 14px; font-style: italic; }
+  .dot-anim::after {
+    content: '';
+    animation: dots 1.2s infinite;
+  }
+  @keyframes dots {
+    0%   { content: '.'; }
+    33%  { content: '..'; }
+    66%  { content: '...'; }
+    100% { content: ''; }
+  }
+
   /* ── RESULT SCREEN ── */
   #result { background: var(--bg); align-items: center; }
   .result-header {
@@ -336,8 +379,15 @@
       <div class="feedback-head" id="fb-head"></div>
       <div id="fb-body"></div>
     </div>
+    <div class="explain-box" id="explain-box">
+      <div class="explain-head">💡 Uitleg</div>
+      <div class="explain-text" id="explain-text"></div>
+    </div>
   </div>
   <div class="quiz-footer">
+    <button class="help-btn" id="help-btn" onclick="askHelp()">
+      <span>🤔</span> Ik snap deze vraag niet
+    </button>
     <button class="next-btn" id="next-btn" onclick="nextQuestion()">Volgende →</button>
   </div>
 </div>
@@ -453,7 +503,9 @@ function renderQ() {
   document.getElementById('q-topic').textContent = q.t;
   document.getElementById('q-text').textContent = q.q;
   document.getElementById('q-feedback').style.display = 'none';
+  document.getElementById('explain-box').style.display = 'none';
   document.getElementById('next-btn').style.display = 'none';
+  document.getElementById('help-btn').style.display = 'flex';
   document.getElementById('next-btn').textContent = cur < total-1 ? 'Volgende →' : 'Bekijk resultaat →';
 
   const container = document.getElementById('q-opts');
@@ -489,7 +541,51 @@ function pick(i) {
   body.textContent = q.u;
 
   log.push({ q: q.q, ok, correct: q.o[q.a], chosen: q.o[i] });
+  document.getElementById('help-btn').style.display = 'none';
   document.getElementById('next-btn').style.display = 'block';
+  document.getElementById('quiz-body').scrollTop = 9999;
+}
+
+async function askHelp() {
+  const q = questions[cur];
+  const btn = document.getElementById('help-btn');
+  const box = document.getElementById('explain-box');
+  const txt = document.getElementById('explain-text');
+
+  btn.disabled = true;
+  btn.style.opacity = '0.5';
+  box.style.display = 'block';
+  txt.innerHTML = '<span class="explain-loading dot-anim">Uitleg laden</span>';
+  document.getElementById('quiz-body').scrollTop = 9999;
+
+  const prompt = `Je bent een biologie-leraar. Geef een korte, begrijpelijke uitleg (max 3 zinnen, eenvoudige taal, geen moeilijke woorden) die helpt om deze quizvraag te begrijpen. Leg het onderwerp uit, niet het antwoord zelf.
+
+Thema: ${q.t}
+Vraag: ${q.q}
+Antwoordopties: ${q.o.join(', ')}
+
+Schrijf alleen de uitleg, geen inleiding of conclusie.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const uitleg = data.content?.[0]?.text || 'Kon geen uitleg laden.';
+    txt.textContent = uitleg;
+  } catch(e) {
+    txt.textContent = 'Kon geen uitleg laden. Controleer je internetverbinding.';
+  }
+
+  btn.disabled = false;
+  btn.style.opacity = '1';
+  btn.textContent = '🔄 Andere uitleg';
   document.getElementById('quiz-body').scrollTop = 9999;
 }
 
