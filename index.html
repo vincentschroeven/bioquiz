@@ -504,11 +504,12 @@ function renderQ() {
   document.getElementById('q-text').textContent = q.q;
   document.getElementById('q-feedback').style.display = 'none';
   document.getElementById('explain-box').style.display = 'none';
+  document.getElementById('explain-text').textContent = '';
   document.getElementById('next-btn').style.display = 'none';
   const helpBtn = document.getElementById('help-btn');
   helpBtn.style.display = 'flex';
   helpBtn.textContent = '🤔 Ik snap deze vraag niet';
-  helpBtn.onclick = askHelp;
+  helpBtn.onclick = () => askHelp(q);
   document.getElementById('next-btn').textContent = cur < total-1 ? 'Volgende →' : 'Bekijk resultaat →';
 
   const container = document.getElementById('q-opts');
@@ -549,19 +550,14 @@ function pick(i) {
   document.getElementById('quiz-body').scrollTop = 9999;
 }
 
-function askHelp() {
-  const q = questions[cur];
+function askHelp(q) {
   const btn = document.getElementById('help-btn');
   const box = document.getElementById('explain-box');
   const txt = document.getElementById('explain-text');
 
+  txt.textContent = q.e || q.u;
   box.style.display = 'block';
-  txt.textContent = q.e;
-  btn.textContent = '💡 Uitleg verborgen — tik om te sluiten';
-  btn.onclick = () => {
-    box.style.display = box.style.display === 'none' ? 'block' : 'none';
-    btn.textContent = box.style.display === 'none' ? '🤔 Ik snap deze vraag niet' : '💡 Uitleg verbergen';
-  };
+  btn.style.display = 'none';
   document.getElementById('quiz-body').scrollTop = 9999;
 }
 
