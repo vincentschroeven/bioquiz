@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BioQuiz">
+<meta name="theme-color" content="#1b4332">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Biologie Quiz</title>
+<style>
+  :root {
+    --green-dark: #1b4332;
+    --green-mid: #2d6a4f;
+    --green-light: #40916c;
+    --green-pale: #d8f3dc;
+    --green-hint: #f0faf2;
+    --accent: #52b788;
+    --red-bg: #fff5f5;
+    --red-border: #fc8181;
+    --red-text: #742a2a;
+    --green-bg: #f0fff4;
+    --green-border: #68d391;
+    --green-text: #22543d;
+    --text: #1a202c;
+    --text-muted: #718096;
+    --border: #e2e8f0;
+    --surface: #ffffff;
+    --bg: #f7fafc;
+    --radius: 14px;
+    --radius-sm: 8px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    height: -webkit-fill-available;
+  }
+
+  /* SCREENS */
+  .screen { display: none; flex-direction: column; height: 100%; }
+  .screen.active { display: flex; }
+
+  /* ── HOME SCREEN ── */
+  #home {
+    background: var(--green-dark);
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: calc(var(--safe-top) + 2rem) 2rem calc(var(--safe-bottom) + 2rem);
+  }
+  .app-logo {
+    width: 88px; height: 88px;
+    background: var(--green-mid);
+    border-radius: 24px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 42px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+  }
+  #home h1 { color: white; font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+  #home p { color: #a8d5b5; font-size: 15px; margin-top: 6px; margin-bottom: 2.5rem; text-align: center; }
+  .home-stats {
+    display: flex; gap: 12px; margin-bottom: 2.5rem; width: 100%;
+  }
+  .stat-card {
+    flex: 1; background: rgba(255,255,255,0.08);
+    border-radius: var(--radius-sm);
+    padding: 12px; text-align: center;
+  }
+  .stat-card .val { color: white; font-size: 22px; font-weight: 700; }
+  .stat-card .lbl { color: #a8d5b5; font-size: 12px; margin-top: 2px; }
+  .start-btn {
+    width: 100%;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    padding: 16px;
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.2px;
+    transition: transform 0.1s, opacity 0.1s;
+  }
+  .start-btn:active { transform: scale(0.97); opacity: 0.9; }
+  .topic-filter {
+    width: 100%; margin-bottom: 12px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: var(--radius-sm);
+    color: white;
+    font-size: 14px;
+    padding: 10px 12px;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .topic-filter option { background: var(--green-dark); color: white; }
+
+  /* ── QUIZ SCREEN ── */
+  #quiz { background: var(--bg); }
+
+  .quiz-header {
+    background: var(--green-dark);
+    padding: calc(var(--safe-top) + 14px) 16px 14px;
+    color: white;
+    flex-shrink: 0;
+  }
+  .quiz-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .q-label { font-size: 13px; color: #a8d5b5; }
+  .q-score-badge {
+    background: rgba(255,255,255,0.15);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+  }
+  .progress-track { height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; }
+  .progress-fill { height: 4px; background: var(--accent); border-radius: 2px; transition: width 0.4s cubic-bezier(.4,0,.2,1); }
+
+  .quiz-body {
+    flex: 1; overflow-y: auto; padding: 20px 16px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .topic-pill {
+    display: inline-block;
+    background: var(--green-pale);
+    color: var(--green-mid);
+    font-size: 12px; font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-bottom: 14px;
+    letter-spacing: 0.3px;
+  }
+  .q-text {
+    font-size: 18px; font-weight: 600;
+    line-height: 1.5;
+    color: var(--text);
+    margin-bottom: 22px;
+  }
+  .options { display: flex; flex-direction: column; gap: 10px; }
+  .opt {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    font-size: 16px;
+    color: var(--text);
+    cursor: pointer;
+    text-align: left;
+    line-height: 1.5;
+    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+    -webkit-appearance: none;
+    width: 100%;
+  }
+  .opt:active:not(:disabled) { transform: scale(0.98); }
+  .opt:disabled { cursor: default; }
+  .opt.correct { background: var(--green-bg); border-color: var(--green-border); color: var(--green-text); }
+  .opt.wrong { background: var(--red-bg); border-color: var(--red-border); color: var(--red-text); }
+  .opt.reveal { background: var(--green-bg); border-color: var(--green-border); color: var(--green-text); }
+
+  .feedback-box {
+    margin-top: 16px;
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    font-size: 15px;
+    line-height: 1.6;
+    display: none;
+    animation: fadeIn 0.2s ease;
+  }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
+  .feedback-box.correct { background: var(--green-bg); border: 1.5px solid var(--green-border); color: var(--green-text); }
+  .feedback-box.wrong { background: var(--red-bg); border: 1.5px solid var(--red-border); color: var(--red-text); }
+  .feedback-head { font-weight: 700; margin-bottom: 4px; font-size: 15px; }
+
+  .quiz-footer {
+    padding: 12px 16px calc(var(--safe-bottom) + 12px);
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .next-btn {
+    width: 100%;
+    background: var(--green-dark);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    padding: 15px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    display: none;
+    transition: transform 0.1s, opacity 0.1s;
+  }
+  .next-btn:active { transform: scale(0.97); opacity: 0.9; }
+
+  /* ── RESULT SCREEN ── */
+  #result { background: var(--bg); align-items: center; }
+  .result-header {
+    background: var(--green-dark);
+    width: 100%;
+    padding: calc(var(--safe-top) + 20px) 20px 24px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .result-header h2 { color: white; font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .result-header p { color: #a8d5b5; font-size: 15px; }
+
+  .result-body {
+    flex: 1; overflow-y: auto; padding: 20px 16px;
+    width: 100%; -webkit-overflow-scrolling: touch;
+  }
+  .score-ring-wrap { display: flex; justify-content: center; margin-bottom: 20px; }
+  .score-ring {
+    width: 130px; height: 130px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 3px solid var(--green-pale);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .score-ring .big { font-size: 34px; font-weight: 800; color: var(--green-mid); }
+  .score-ring .small { font-size: 13px; color: var(--text-muted); }
+  .result-msg { text-align: center; font-size: 17px; font-weight: 600; margin-bottom: 6px; }
+  .result-sub { text-align: center; font-size: 14px; color: var(--text-muted); margin-bottom: 20px; }
+
+  .mini-stats { display: flex; gap: 10px; margin-bottom: 20px; }
+  .mini-stat { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; text-align: center; }
+  .mini-stat .mv { font-size: 20px; font-weight: 700; }
+  .mini-stat .ml { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .mini-stat.g .mv { color: #38a169; }
+  .mini-stat.r .mv { color: #e53e3e; }
+
+  .review-section { margin-bottom: 16px; }
+  .review-title { font-size: 14px; font-weight: 600; color: var(--text-muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .review-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .ri-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+  .ri-dot.ok { background: #38a169; }
+  .ri-dot.fail { background: #e53e3e; }
+  .ri-q { font-size: 14px; line-height: 1.5; color: var(--text); }
+  .ri-ans { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+  .result-footer {
+    padding: 12px 16px calc(var(--safe-bottom) + 12px);
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex; gap: 10px;
+    width: 100%; flex-shrink: 0;
+  }
+  .btn-sec {
+    flex: 1;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 13px;
+    font-size: 15px; font-weight: 600;
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .btn-sec:active { transform: scale(0.97); background: var(--bg); }
+  .btn-pri {
+    flex: 1.5;
+    background: var(--green-dark);
+    border: none;
+    border-radius: var(--radius);
+    padding: 13px;
+    font-size: 15px; font-weight: 600;
+    color: white;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.1s;
+  }
+  .btn-pri:active { transform: scale(0.97); opacity: 0.9; }
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<div class="screen active" id="home">
+  <div class="app-logo">🧬</div>
+  <h1>Biologie Quiz</h1>
+  <p>Oefen voor je examen<br>Natuurwetenschappen 3DO</p>
+  <div class="home-stats">
+    <div class="stat-card"><div class="val">30</div><div class="lbl">vragen</div></div>
+    <div class="stat-card"><div class="val" id="hs-pct">—</div><div class="lbl">beste score</div></div>
+    <div class="stat-card"><div class="val" id="hs-runs">0</div><div class="lbl">pogingen</div></div>
+  </div>
+  <select class="topic-filter" id="topic-sel">
+    <option value="all">Alle thema's</option>
+    <option value="Biologische organisatie">Biologische organisatie</option>
+    <option value="De cel">De cel</option>
+    <option value="Celmembraan">Celmembraan</option>
+    <option value="Fotosynthese & celademhaling">Fotosynthese & celademhaling</option>
+    <option value="Immuniteit">Immuniteit</option>
+    <option value="Voortplanting">Voortplanting</option>
+    <option value="DNA & Genetica">DNA & Genetica</option>
+    <option value="Celdelingen">Celdelingen</option>
+    <option value="Erfelijkheid">Erfelijkheid</option>
+    <option value="Moleculaire genetica">Moleculaire genetica</option>
+  </select>
+  <button class="start-btn" onclick="startQuiz()">Start quiz →</button>
+</div>
+
+<!-- QUIZ -->
+<div class="screen" id="quiz">
+  <div class="quiz-header">
+    <div class="quiz-top">
+      <span class="q-label" id="q-label">Vraag 1 van 30</span>
+      <span class="q-score-badge" id="q-score">0 / 0</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="q-prog" style="width:0%"></div></div>
+  </div>
+  <div class="quiz-body" id="quiz-body">
+    <div class="topic-pill" id="q-topic"></div>
+    <div class="q-text" id="q-text"></div>
+    <div class="options" id="q-opts"></div>
+    <div class="feedback-box" id="q-feedback">
+      <div class="feedback-head" id="fb-head"></div>
+      <div id="fb-body"></div>
+    </div>
+  </div>
+  <div class="quiz-footer">
+    <button class="next-btn" id="next-btn" onclick="nextQuestion()">Volgende →</button>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div class="screen" id="result">
+  <div class="result-header">
+    <h2 id="res-title">Goed gedaan!</h2>
+    <p id="res-sub">Quiz voltooid</p>
+  </div>
+  <div class="result-body">
+    <div class="score-ring-wrap">
+      <div class="score-ring">
+        <span class="big" id="res-big"></span>
+        <span class="small" id="res-small"></span>
+      </div>
+    </div>
+    <p class="result-msg" id="res-msg"></p>
+    <p class="result-sub" id="res-detail"></p>
+    <div class="mini-stats">
+      <div class="mini-stat g"><div class="mv" id="ms-ok">0</div><div class="ml">Juist</div></div>
+      <div class="mini-stat r"><div class="mv" id="ms-fail">0</div><div class="ml">Fout</div></div>
+      <div class="mini-stat"><div class="mv" id="ms-pct">0%</div><div class="ml">Score</div></div>
+    </div>
+    <div class="review-section">
+      <div class="review-title">Overzicht antwoorden</div>
+      <div id="review-list"></div>
+    </div>
+  </div>
+  <div class="result-footer">
+    <button class="btn-sec" onclick="goHome()">Menu</button>
+    <button class="btn-pri" onclick="startQuiz()">Opnieuw →</button>
+  </div>
+</div>
+
+<script>
+const ALL_Q = [
+  {t:"Biologische organisatie",q:"Wat is het LAAGSTE biologische organisatieniveau?",o:["Ecosysteem","Cel","Molecuul","Weefsel"],a:2,u:"Een molecuul (zoals DNA of een eiwit) is de kleinste chemische bouwsteen — lager dan de cel zelf."},
+  {t:"Biologische organisatie",q:"Een groep gelijksoortige cellen die samenwerken aan dezelfde taak heet een ...",o:["Orgaan","Weefsel","Populatie","Organisme"],a:1,u:"Weefsel = groep gelijksoortige cellen met dezelfde taak, bijv. spierweefsel of zenuwweefsel."},
+  {t:"Biologische organisatie",q:"De biosfeer omvat ...",o:["Alle ecosystemen op aarde samen","Alle organismen in één bos","Het water op aarde","Alle cellen van een organisme"],a:0,u:"De biosfeer is het hoogste organisatieniveau en omvat ALLE ecosystemen: land, water én atmosfeer."},
+  {t:"Biologische organisatie",q:"Een groep organismen van dezelfde soort in een bepaald gebied heet een ...",o:["Ecosysteem","Levensgemeenschap","Populatie","Orgaanstelsel"],a:2,u:"Een populatie = alle individuen van dezelfde soort in een bepaald gebied die zich onderling kunnen voortplanten."},
+  {t:"De cel",q:"Welk organel wordt de 'energiecentrale' van de cel genoemd?",o:["Ribosoom","Golgi-apparaat","Mitochondrion","Lysosoom"],a:2,u:"Mitochondriën produceren ATP via celademhaling — vandaar de bijnaam 'energiecentrale'."},
+  {t:"De cel",q:"Welk organel is verantwoordelijk voor de aanmaak van eiwitten?",o:["Centrosoom","Ribosoom","Vacuole","Chloroplast"],a:1,u:"Ribosomen bouwen eiwitten op basis van instructies van het mRNA — de bouwvakkers van de cel."},
+  {t:"De cel",q:"Wat is de functie van het Golgi-apparaat?",o:["Energie produceren","Eiwitten sorteren, bewerken en verpakken","DNA bewaren","Fotosynthese uitvoeren"],a:1,u:"Het Golgi-apparaat ontvangt eiwitten van het ER, bewerkt, sorteert en verpakt ze voor transport."},
+  {t:"De cel",q:"Wat is het verschil tussen prokaryoten en eukaryoten?",o:["Prokaryoten hebben geen DNA","Prokaryoten hebben geen echte celkern","Eukaryoten hebben geen ribosomen","Prokaryoten zijn altijd groter"],a:1,u:"Prokaryoten missen een kernmembraan — hun DNA ligt vrij in het cytoplasma. Eukaryoten hebben een echte celkern."},
+  {t:"De cel",q:"Welk organel komt ALLEEN voor in plantaardige cellen?",o:["Mitochondrion","Ribosoom","Chloroplast","Golgi-apparaat"],a:2,u:"Chloroplasten zijn enkel in planten (en algen) aanwezig — ze voeren fotosynthese uit met chlorofyl."},
+  {t:"De cel",q:"Wat is de functie van lysosomen?",o:["Eiwitten aanmaken","Energie produceren","Afvalstoffen en beschadigde organellen afbreken","Water opslaan"],a:2,u:"Lysosomen bevatten verteringsenzymen en breken beschadigde organellen, bacteriën en afvalmateriaal af."},
+  {t:"De cel",q:"Wat bevindt zich in de cristae van het mitochondrion?",o:["Het DNA van de cel","Enzymen die ATP produceren","Ribosomen voor eiwitsynthese","Chlorofyl voor fotosynthese"],a:1,u:"De cristae zijn plooien van het binnenste membraan waar ATP-synthase en de elektronentransportketen zich bevinden."},
+  {t:"De cel",q:"Welk organel zorgt voor stevigheid bij plantaardige cellen door waterdruk?",o:["Chloroplast","Mitochondrion","Centrale vacuole","Ribosoom"],a:2,u:"De grote centrale vacuole is gevuld met water en creëert turgordruk tegen de celwand, waardoor de plant stevig blijft."},
+  {t:"Celmembraan",q:"Waaruit bestaat de basisstructuur van het celmembraan?",o:["Een laag cellulose","Een dubbele laag fosfolipiden","Een enkelvoudige laag eiwitten","Twee lagen cholesterol"],a:1,u:"Het celmembraan bestaat uit een fosfolipide-dubbellaag: twee lagen met hydrofobe staarten naar binnen."},
+  {t:"Celmembraan",q:"Wat betekent 'selectieve permeabiliteit' van het celmembraan?",o:["Het membraan laat alles door","Het membraan laat niets door","Het membraan laat sommige stoffen wel en andere niet door","Het membraan is altijd open"],a:2,u:"Selectieve permeabiliteit = het membraan kiest wat er in en uit mag. Kleine vetachtige moleculen passeren vrij, grote niet."},
+  {t:"Celmembraan",q:"Waarvoor dient de celwand bij planten?",o:["Fotosynthese","Stevigheid, vormbehoud en bescherming","Energieproductie","Transport van water"],a:1,u:"De celwand (van cellulose) geeft stevigheid, behoudt de celvorm en voorkomt te grote wateropname."},
+  {t:"Fotosynthese & celademhaling",q:"Wat is de algemene vergelijking voor fotosynthese?",o:["C6H12O6 + 6O2 → 6CO2 + H2O + energie","6CO2 + 6H2O + licht → C6H12O6 + 6O2","6O2 + glucose → water + CO2","CO2 + water → O2 + energie"],a:1,u:"Bij fotosynthese worden CO2 en water omgezet in glucose en zuurstof met lichtenergie — dit is de basisformule."},
+  {t:"Fotosynthese & celademhaling",q:"Waar vinden de lichtreacties van fotosynthese plaats?",o:["In het stroma","In de cristae","In de thylakoïdmembraan","In het cytoplasma"],a:2,u:"De lichtreacties vinden plaats in de thylakoïdmembraan. Het stroma is voor de donkerreacties (Calvincyclus)."},
+  {t:"Fotosynthese & celademhaling",q:"Wat is ATP?",o:["Een soort vet","De energiemunt van de cel","Een stikstofbase in DNA","Een enzym voor fotosynthese"],a:1,u:"ATP (adenosinetrifosfaat) is de universele energiemunt: afbraak tot ADP + Pi geeft energie vrij voor celprocessen."},
+  {t:"Fotosynthese & celademhaling",q:"Welk product ontstaat bij melkzuurgisting?",o:["Ethanol","Zuurstof","Melkzuur","Glucose"],a:2,u:"Bij melkzuurgisting (in spiercellen bij intense inspanning) wordt glucose omgezet in melkzuur + 2 ATP."},
+  {t:"Fotosynthese & celademhaling",q:"In welk deel van de mitochondriën vindt de Krebscyclus plaats?",o:["De cristae","De matrix","Het buitenmembraan","De tussenmembraanruimte"],a:1,u:"De Krebscyclus vindt plaats in de matrix van het mitochondrion, waar de benodigde enzymen aanwezig zijn."},
+  {t:"Fotosynthese & celademhaling",q:"Hoeveel ATP levert aerobe celademhaling op?",o:["2 ATP","10 ATP","36-38 ATP","100 ATP"],a:2,u:"Aerobe celademhaling levert 36-38 ATP op (glycolyse 2 + Krebscyclus ~2 + oxidatieve fosforylering ~32-34)."},
+  {t:"Immuniteit",q:"Wat is een antigeen?",o:["Een witte bloedcel","Een lichaamsvreemde stof die een immuunreactie uitlokt","Een antilichaam","Een hormoon van de thymus"],a:1,u:"Een antigeen is een lichaamsvreemde stof (bijv. een eiwit op een bacterie) die een immuunrespons uitlokt."},
+  {t:"Immuniteit",q:"Welke cellen maken antilichamen aan?",o:["T-helpercellen","Macrofagen","B-lymfocyten","Neutrofielen"],a:2,u:"B-lymfocyten (B-cellen) maken antilichamen aan na activatie door een antigeen en T-helpercellen."},
+  {t:"Immuniteit",q:"Wat is het voordeel van passieve immunisatie?",o:["Ze geeft levenslange bescherming","Ze beschermt onmiddellijk","Ze vormt meer geheugencellen","Ze vereist vaccinatie"],a:1,u:"Passieve immunisatie (kant-en-klare antilichamen) werkt meteen, maar is kortdurend en vormt geen geheugencellen."},
+  {t:"Immuniteit",q:"In welk orgaan rijpen T-lymfocyten?",o:["Beenmerg","Milt","Lymfeknoop","Thymus"],a:3,u:"T-cellen worden aangemaakt in het beenmerg maar rijpen in de thymus, waar ze leren lichaamseigen van lichaamsvreemd te onderscheiden."},
+  {t:"Voortplanting",q:"Waar vindt bevruchting normaal plaats?",o:["In de baarmoeder","In de eierstok","In de eileider","In de vagina"],a:2,u:"Bevruchting vindt gewoonlijk plaats in de eileider, vlakbij de eierstok, kort na de ovulatie."},
+  {t:"Voortplanting",q:"Wat is de functie van de placenta?",o:["De foetus omhullen met vruchtwater","Uitwisseling van stoffen en hormoonproductie","Het geslacht bepalen","De eierstokken stimuleren"],a:1,u:"De placenta regelt uitwisseling van O2, voedingsstoffen en afvalstoffen, en produceert hormonen zoals hCG en progesteron."},
+  {t:"DNA & Genetica",q:"Welke stikstofbasen koppelen aan elkaar in DNA?",o:["A-G en T-C","A-T en G-C","A-C en G-T","A-U en G-C"],a:1,u:"In DNA: Adenine (A) bindt met Thymine (T) via 2 H-bruggen, Guanine (G) met Cytosine (C) via 3 H-bruggen."},
+  {t:"DNA & Genetica",q:"Hoeveel chromosomen heeft een normale menselijke lichaamscel?",o:["23","46","92","44"],a:1,u:"Menselijke lichaamscellen zijn diploïd (2n = 46): 23 paar chromosomen (22 autosomen + 1 geslachtschromosomenpaar)."},
+  {t:"Celdelingen",q:"Wat is het resultaat van mitose?",o:["4 haploïde dochtercellen","2 genetisch identieke diploïde dochtercellen","2 haploïde dochtercellen","4 diploïde dochtercellen"],a:1,u:"Mitose produceert 2 genetisch identieke dochtercellen met hetzelfde chromosomenaantal (2n → 2n). Voor groei en herstel."},
+  {t:"Celdelingen",q:"Wat is crossing-over?",o:["Het verdelen van chromosomen bij mitose","De uitwisseling van DNA-stukjes tussen homologe chromosomen in meiose","Het splitsen van centromeren","De vorming van het spoelfiguur"],a:1,u:"Crossing-over vindt plaats in profase I van meiose: niet-zusterchromatiden wisselen DNA uit op chiasma-punten → genetische variatie."},
+  {t:"Erfelijkheid",q:"Welk genotype geeft het recessieve fenotype bij allelen A (dominant) en a (recessief)?",o:["AA","Aa","aA","aa"],a:3,u:"Het recessieve fenotype treedt enkel op bij genotype aa (homozygoot recessief) — geen dominant allel aanwezig."},
+  {t:"Moleculaire genetica",q:"Welk proces zet de DNA-informatie om in mRNA?",o:["Translatie","Replicatie","Transcriptie","Mutatie"],a:2,u:"Transcriptie = DNA → mRNA (in de celkern, door RNA-polymerase). Translatie is daarna mRNA → eiwit (op ribosomen)."},
+  {t:"Moleculaire genetica",q:"Wat is een codon?",o:["Een eiwit","Een triplet van nucleotiden op mRNA dat codeert voor één aminozuur","Een gen op het DNA","Een type RNA dat aminozuren transporteert"],a:1,u:"Een codon is een triplet van 3 nucleotiden op mRNA. Er zijn 64 codons voor 20 aminozuren + start/stop signalen."},
+  {t:"Erfelijkheid",q:"Wat beschrijft de splitsingswet van Mendel?",o:["F1 nakomelingen zijn altijd uniform","In F2 verschijnen beide kenmerken in verhouding 3:1","Twee genen worden altijd samen doorgegeven","Alle allelen zijn codominant"],a:1,u:"De splitsingswet: bij kruising van F1-heterozygoten (Aa × Aa) geeft F2 een 3:1-verhouding dominant:recessief fenotype."},
+  {t:"DNA & Genetica",q:"Wat is het verschil tussen diploïd en haploïd?",o:["Diploïd heeft één chromosoomset, haploïd twee","Diploïd heeft twee chromosoomsets (2n), haploïd één (n)","Beide zijn hetzelfde","Diploïd is enkel bij planten"],a:1,u:"Diploïd (2n) = twee sets chromosomen (lichaamscellen, 46 bij mens). Haploïd (n) = één set (geslachtscellen, 23 bij mens)."},
+];
+
+let questions = [], cur = 0, score = 0, answered = false, log = [];
+
+function shuffle(arr) {
+  let a=[...arr];
+  for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById(id).scrollTop = 0;
+}
+
+function loadStats() {
+  const runs = parseInt(localStorage.getItem('bq_runs')||'0');
+  const best = parseInt(localStorage.getItem('bq_best')||'-1');
+  document.getElementById('hs-runs').textContent = runs;
+  document.getElementById('hs-pct').textContent = best >= 0 ? best+'%' : '—';
+}
+
+function startQuiz() {
+  const topic = document.getElementById('topic-sel').value;
+  const pool = topic === 'all' ? ALL_Q : ALL_Q.filter(q=>q.t===topic);
+  questions = shuffle(pool).slice(0, Math.min(30, pool.length));
+  cur = 0; score = 0; log = [];
+  show('quiz');
+  renderQ();
+}
+
+function renderQ() {
+  answered = false;
+  const q = questions[cur];
+  const total = questions.length;
+  document.getElementById('q-label').textContent = `Vraag ${cur+1} van ${total}`;
+  document.getElementById('q-score').textContent = `${score} / ${cur}`;
+  document.getElementById('q-prog').style.width = (cur/total*100)+'%';
+  document.getElementById('q-topic').textContent = q.t;
+  document.getElementById('q-text').textContent = q.q;
+  document.getElementById('q-feedback').style.display = 'none';
+  document.getElementById('next-btn').style.display = 'none';
+  document.getElementById('next-btn').textContent = cur < total-1 ? 'Volgende →' : 'Bekijk resultaat →';
+
+  const container = document.getElementById('q-opts');
+  container.innerHTML = '';
+  q.o.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.textContent = opt;
+    btn.onclick = () => pick(i);
+    container.appendChild(btn);
+  });
+  document.getElementById('quiz-body').scrollTop = 0;
+}
+
+function pick(i) {
+  if (answered) return;
+  answered = true;
+  const q = questions[cur];
+  const btns = document.querySelectorAll('.opt');
+  btns.forEach(b => b.disabled = true);
+  const ok = i === q.a;
+  if (ok) score++;
+
+  btns[i].classList.add(ok ? 'correct' : 'wrong');
+  if (!ok) btns[q.a].classList.add('reveal');
+
+  const fb = document.getElementById('q-feedback');
+  const head = document.getElementById('fb-head');
+  const body = document.getElementById('fb-body');
+  fb.style.display = 'block';
+  fb.className = 'feedback-box ' + (ok ? 'correct' : 'wrong');
+  head.textContent = ok ? '✓ Juist!' : '✗ Niet juist — het juiste antwoord is: ' + q.o[q.a];
+  body.textContent = q.u;
+
+  log.push({ q: q.q, ok, correct: q.o[q.a], chosen: q.o[i] });
+  document.getElementById('next-btn').style.display = 'block';
+  document.getElementById('quiz-body').scrollTop = 9999;
+}
+
+function nextQuestion() {
+  cur++;
+  if (cur >= questions.length) showResult();
+  else renderQ();
+}
+
+function showResult() {
+  const total = questions.length;
+  const pct = Math.round(score/total*100);
+  const fails = total - score;
+
+  let title, msg;
+  if (pct >= 90) { title = 'Uitstekend! 🎉'; msg = 'Je beheerst de biologie zeer goed!'; }
+  else if (pct >= 70) { title = 'Goed gedaan!'; msg = 'Herhaal de gemiste vragen voor het examen.'; }
+  else if (pct >= 50) { title = 'Aardig op weg!'; msg = 'Ga nog eens door de termen die je miste.'; }
+  else { title = 'Blijven oefenen!'; msg = 'Lees de woordenlijst nog eens goed door.'; }
+
+  document.getElementById('res-title').textContent = title;
+  document.getElementById('res-sub').textContent = `${score} van ${total} vragen juist`;
+  document.getElementById('res-big').textContent = score+'/'+total;
+  document.getElementById('res-small').textContent = 'correct';
+  document.getElementById('res-msg').textContent = msg;
+  document.getElementById('res-detail').textContent = pct+'% gescoord';
+  document.getElementById('ms-ok').textContent = score;
+  document.getElementById('ms-fail').textContent = fails;
+  document.getElementById('ms-pct').textContent = pct+'%';
+
+  const rl = document.getElementById('review-list');
+  rl.innerHTML = '';
+  log.forEach((r, i) => {
+    const d = document.createElement('div');
+    d.className = 'review-item';
+    d.innerHTML = `<div class="ri-dot ${r.ok?'ok':'fail'}"></div><div><div class="ri-q">${i+1}. ${r.q}</div>${!r.ok?`<div class="ri-ans">Jij: ${r.chosen} → Juist: ${r.correct}</div>`:''}</div>`;
+    rl.appendChild(d);
+  });
+
+  // Save stats
+  const runs = parseInt(localStorage.getItem('bq_runs')||'0') + 1;
+  const best = Math.max(parseInt(localStorage.getItem('bq_best')||'0'), pct);
+  localStorage.setItem('bq_runs', runs);
+  localStorage.setItem('bq_best', best);
+
+  show('result');
+}
+
+function goHome() { loadStats(); show('home'); }
+
+// Register service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+
+loadStats();
+</script>
+</body>
+</html>
