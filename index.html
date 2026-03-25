@@ -505,7 +505,10 @@ function renderQ() {
   document.getElementById('q-feedback').style.display = 'none';
   document.getElementById('explain-box').style.display = 'none';
   document.getElementById('next-btn').style.display = 'none';
-  document.getElementById('help-btn').style.display = 'flex';
+  const helpBtn = document.getElementById('help-btn');
+  helpBtn.style.display = 'flex';
+  helpBtn.textContent = '🤔 Ik snap deze vraag niet';
+  helpBtn.onclick = askHelp;
   document.getElementById('next-btn').textContent = cur < total-1 ? 'Volgende →' : 'Bekijk resultaat →';
 
   const container = document.getElementById('q-opts');
